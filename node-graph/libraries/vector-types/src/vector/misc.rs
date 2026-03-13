@@ -536,6 +536,14 @@ impl HandleId {
 		handle_position.map(|pos| (pos - anchor_position).length()).unwrap_or(f64::MAX)
 	}
 
+	/// Gets the inner `u64` of the segment this handle belongs to.
+	///
+	/// Note: this returns only the segment ID component. Two handles of different
+	/// types (primary vs. end) on the same segment will return the same value.
+	pub fn as_u64(self) -> u64 {
+		self.segment.inner()
+	}
+
 	/// Convert an end handle to the primary handle and a primary handle to an end handle. Note that the new handle may not exist (e.g. for a quadratic bézier).
 	#[must_use]
 	pub fn opposite(self) -> Self {
