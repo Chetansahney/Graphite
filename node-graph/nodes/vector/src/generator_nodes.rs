@@ -49,7 +49,16 @@ fn circle(
 	radius: f64,
 ) -> Table<Vector> {
 	let radius = radius.abs();
-	Table::new_from_element(Vector::from_subpath(subpath::Subpath::new_ellipse(DVec2::splat(-radius), DVec2::splat(radius))))
+	let mut circle = Vector::from_subpath(subpath::Subpath::new_ellipse(DVec2::splat(-radius), DVec2::splat(radius)));
+
+	let len = circle.segment_domain.ids().len();
+	for i in 0..len {
+		circle
+			.colinear_manipulators
+			.push([HandleId::end(circle.segment_domain.ids()[i]), HandleId::primary(circle.segment_domain.ids()[(i + 1) % len])]);
+	}
+
+	Table::new_from_element(circle)
 }
 
 /// Generates an arc shape forming a portion of a circle which may be open, closed, or a pie slice.
@@ -66,7 +75,7 @@ fn arc(
 	sweep_angle: Angle,
 	arc_type: ArcType,
 ) -> Table<Vector> {
-	Table::new_from_element(Vector::from_subpath(subpath::Subpath::new_arc(
+	let mut arc_vector = Vector::from_subpath(subpath::Subpath::new_arc(
 		radius,
 		start_angle / 360. * std::f64::consts::TAU,
 		sweep_angle / 360. * std::f64::consts::TAU,
@@ -75,7 +84,18 @@ fn arc(
 			ArcType::Closed => subpath::ArcType::Closed,
 			ArcType::PieSlice => subpath::ArcType::PieSlice,
 		},
-	)))
+	));
+
+	let len = arc_vector.segment_domain.ids().len();
+	for i in 0..len.saturating_sub(1) {
+		if arc_vector.segment_domain.handles()[i].is_cubic() && arc_vector.segment_domain.handles()[i + 1].is_cubic() {
+			arc_vector
+				.colinear_manipulators
+				.push([HandleId::end(arc_vector.segment_domain.ids()[i]), HandleId::primary(arc_vector.segment_domain.ids()[i + 1])]);
+		}
+	}
+
+	Table::new_from_element(arc_vector)
 }
 
 /// Generates a spiral shape that winds from an inner to an outer radius.
@@ -90,14 +110,25 @@ fn spiral(
 	#[default(25)] outer_radius: f64,
 	#[default(90.)] angular_resolution: f64,
 ) -> Table<Vector> {
-	Table::new_from_element(Vector::from_subpath(subpath::Subpath::new_spiral(
+	let mut spiral_vector = Vector::from_subpath(subpath::Subpath::new_spiral(
 		inner_radius,
 		outer_radius,
 		turns,
 		start_angle.to_radians(),
 		angular_resolution.to_radians(),
 		spiral_type,
-	)))
+	));
+
+	let len = spiral_vector.segment_domain.ids().len();
+	for i in 0..len.saturating_sub(1) {
+		if spiral_vector.segment_domain.handles()[i].is_cubic() && spiral_vector.segment_domain.handles()[i + 1].is_cubic() {
+			spiral_vector
+				.colinear_manipulators
+				.push([HandleId::end(spiral_vector.segment_domain.ids()[i]), HandleId::primary(spiral_vector.segment_domain.ids()[i + 1])]);
+		}
+	}
+
+	Table::new_from_element(spiral_vector)
 }
 
 /// Generates an ellipse shape (an oval or stretched circle) with the chosen radii.

@@ -39,6 +39,11 @@ macro_rules! create_ids {
 					self.0
 				}
 
+				/// Gets the inner raw value as a `u64`. This is an alias for [`inner`](Self::inner).
+				pub fn as_u64(self) -> u64 {
+					self.0
+				}
+
 				/// Adds one to the current value and returns the old value. Note that the ids are not going to be unique unless you use the largest id.
 				pub fn next_id(&mut self) -> Self {
 					self.0 += 1;

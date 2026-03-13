@@ -476,6 +476,18 @@ impl ManipulatorPointId {
 			_ => None,
 		}
 	}
+
+	/// Gets the inner raw `u64` value of the contained ID.
+	///
+	/// For [`ManipulatorPointId::Anchor`] this is the inner value of the [`PointId`].
+	/// For [`ManipulatorPointId::PrimaryHandle`] and [`ManipulatorPointId::EndHandle`] this is the inner value of the [`SegmentId`].
+	#[must_use]
+	pub fn as_u64(self) -> u64 {
+		match self {
+			ManipulatorPointId::Anchor(id) => id.as_u64(),
+			ManipulatorPointId::PrimaryHandle(id) | ManipulatorPointId::EndHandle(id) => id.as_u64(),
+		}
+	}
 }
 
 /// The type of handle found on a bézier curve.
@@ -534,6 +546,14 @@ impl HandleId {
 		};
 		let handle_position = self.to_manipulator_point().get_position(vector);
 		handle_position.map(|pos| (pos - anchor_position).length()).unwrap_or(f64::MAX)
+	}
+
+	/// Gets the inner `u64` of the segment this handle belongs to.
+	///
+	/// Note: this returns only the segment ID component. Two handles of different
+	/// types (primary vs. end) on the same segment will return the same value.
+	pub fn as_u64(self) -> u64 {
+		self.segment.inner()
 	}
 
 	/// Convert an end handle to the primary handle and a primary handle to an end handle. Note that the new handle may not exist (e.g. for a quadratic bézier).
