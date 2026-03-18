@@ -23,8 +23,25 @@ use graphene_std::vector::{HandleExt, PointId, SegmentId, Vector, VectorModifica
 use kurbo::{CubicBez, DEFAULT_ACCURACY, Line, ParamCurve, PathSeg, Point, QuadBez, Shape};
 
 /// Determines if a path should be extended. Goal in viewport space. Returns the path and if it is extending from the start, if applicable.
+/// Only considers open path endpoints (anchor points connected to exactly one segment), not corners of closed shapes.
 pub fn should_extend(document: &DocumentMessageHandler, goal: DVec2, tolerance: f64, layers: impl Iterator<Item = LayerNodeIdentifier>) -> Option<(LayerNodeIdentifier, PointId, DVec2)> {
-	closest_point(document, goal, tolerance, layers, |_| false)
+	let mut best = None;
+	let mut best_distance_squared = tolerance * tolerance;
+	for layer in layers {
+		let viewspace = document.metadata().transform_to_viewport(layer);
+		let Some(vector) = document.network_interface.compute_modified_vector(layer) else { continue };
+		for id in vector.anchor_endpoints() {
+			let Some(point) = vector.point_domain.position_from_id(id) else { continue };
+
+			let distance_squared = viewspace.transform_point2(point).distance_squared(goal);
+
+			if distance_squared < best_distance_squared {
+				best = Some((layer, id, point));
+				best_distance_squared = distance_squared;
+			}
+		}
+	}
+	best
 }
 
 /// Determine the closest point to the goal point under max_distance.
