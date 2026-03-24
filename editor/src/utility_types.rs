@@ -108,3 +108,95 @@ impl DebugMessageTree {
 		self.message_handler.as_ref()
 	}
 }
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn message_data_getters_return_constructed_values() {
+		let fields = vec![("field_a".to_string(), 1), ("field_b".to_string(), 2)];
+		let data = MessageData::new("MyMessage".to_string(), fields.clone(), "src/foo.rs", 42);
+
+		assert_eq!(data.name(), "MyMessage");
+		assert_eq!(data.fields(), &fields);
+		assert_eq!(data.path(), "src/foo.rs");
+		assert_eq!(data.line_number(), 42);
+	}
+
+	#[test]
+	fn debug_message_tree_new_has_empty_optional_fields() {
+		let tree = DebugMessageTree::new("RootMessage");
+
+		assert_eq!(tree.name(), "RootMessage");
+		assert!(tree.fields().is_none());
+		assert!(tree.variants().is_none());
+		assert!(tree.message_handler_fields().is_none());
+		assert!(tree.message_handler_data_fields().is_none());
+		assert_eq!(tree.path(), "");
+		assert_eq!(tree.line_number(), 0);
+	}
+
+	#[test]
+	fn debug_message_tree_add_fields_stores_field_names() {
+		let mut tree = DebugMessageTree::new("Msg");
+		tree.add_fields(vec!["alpha".to_string(), "beta".to_string()]);
+
+		let fields = tree.fields().expect("fields should be set");
+		assert_eq!(fields, &vec!["alpha".to_string(), "beta".to_string()]);
+	}
+
+	#[test]
+	fn debug_message_tree_set_path_and_line_number() {
+		let mut tree = DebugMessageTree::new("Msg");
+		tree.set_path("src/messages/mod.rs");
+		tree.set_line_number(99);
+
+		assert_eq!(tree.path(), "src/messages/mod.rs");
+		assert_eq!(tree.line_number(), 99);
+	}
+
+	#[test]
+	fn debug_message_tree_add_single_variant() {
+		let mut root = DebugMessageTree::new("Root");
+		root.add_variant(DebugMessageTree::new("VariantA"));
+
+		let variants = root.variants().expect("variants should be set");
+		assert_eq!(variants.len(), 1);
+		assert_eq!(variants[0].name(), "VariantA");
+	}
+
+	#[test]
+	fn debug_message_tree_add_multiple_variants() {
+		let mut root = DebugMessageTree::new("Root");
+		root.add_variant(DebugMessageTree::new("VariantA"));
+		root.add_variant(DebugMessageTree::new("VariantB"));
+		root.add_variant(DebugMessageTree::new("VariantC"));
+
+		let variants = root.variants().expect("variants should be set");
+		assert_eq!(variants.len(), 3);
+		assert_eq!(variants[0].name(), "VariantA");
+		assert_eq!(variants[1].name(), "VariantB");
+		assert_eq!(variants[2].name(), "VariantC");
+	}
+
+	#[test]
+	fn debug_message_tree_add_message_handler() {
+		let mut tree = DebugMessageTree::new("Msg");
+		let handler_data = MessageData::new("Handler".to_string(), vec![], "path.rs", 5);
+		tree.add_message_handler_field(handler_data);
+
+		let handler = tree.message_handler_fields().expect("handler should be set");
+		assert_eq!(handler.name(), "Handler");
+	}
+
+	#[test]
+	fn debug_message_tree_add_message_handler_data() {
+		let mut tree = DebugMessageTree::new("Msg");
+		let data = MessageData::new("HandlerData".to_string(), vec![], "data.rs", 10);
+		tree.add_message_handler_data_field(data);
+
+		let handler_data = tree.message_handler_data_fields().expect("handler data should be set");
+		assert_eq!(handler_data.name(), "HandlerData");
+	}
+}

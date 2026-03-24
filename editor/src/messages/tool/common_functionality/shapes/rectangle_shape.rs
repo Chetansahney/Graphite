@@ -53,3 +53,96 @@ impl Rectangle {
 		}
 	}
 }
+
+#[cfg(test)]
+mod test_rectangle {
+	use crate::messages::portfolio::document::node_graph::document_node_definitions::DefinitionIdentifier;
+	use crate::messages::tool::common_functionality::graph_modification_utils::NodeGraphLayer;
+	use crate::test_utils::test_prelude::*;
+	use glam::DAffine2;
+	use graph_craft::document::value::TaggedValue;
+
+	struct ResolvedRectangle {
+		width: f64,
+		height: f64,
+		transform: DAffine2,
+	}
+
+	async fn get_rectangles(editor: &mut EditorTestUtils) -> Vec<ResolvedRectangle> {
+		let document = editor.active_document();
+		let network_interface = &document.network_interface;
+
+		document
+			.metadata()
+			.all_layers()
+			.filter_map(|layer| {
+				let node_inputs = NodeGraphLayer::new(layer, network_interface)
+					.find_node_inputs(&DefinitionIdentifier::ProtoNode(graphene_std::vector::generator_nodes::rectangle::IDENTIFIER))?;
+				let Some(&TaggedValue::F64(width)) = node_inputs[1].as_value() else {
+					return None;
+				};
+				let Some(&TaggedValue::F64(height)) = node_inputs[2].as_value() else {
+					return None;
+				};
+				Some(ResolvedRectangle {
+					width,
+					height,
+					transform: document.metadata().transform_to_document(layer),
+				})
+			})
+			.collect()
+	}
+
+	#[tokio::test]
+	async fn rectangle_draw_simple() {
+		let mut editor = EditorTestUtils::create();
+		editor.new_document().await;
+		editor.drag_tool(ToolType::Rectangle, 0., 0., 40., 30., ModifierKeys::empty()).await;
+
+		assert_eq!(editor.active_document().metadata().all_layers().count(), 1);
+
+		let rects = get_rectangles(&mut editor).await;
+		assert_eq!(rects.len(), 1);
+		assert_eq!(rects[0].width, 40.);
+		assert_eq!(rects[0].height, 30.);
+		// Transform should place the layer at the midpoint of (0,0)→(40,30)
+		assert!(rects[0].transform.abs_diff_eq(DAffine2::from_translation(DVec2::new(20., 15.)), 1e-10));
+	}
+
+	#[tokio::test]
+	async fn rectangle_draw_lock_ratio() {
+		let mut editor = EditorTestUtils::create();
+		editor.new_document().await;
+		editor.drag_tool(ToolType::Rectangle, 0., 0., 50., 30., ModifierKeys::SHIFT).await;
+
+		let rects = get_rectangles(&mut editor).await;
+		assert_eq!(rects.len(), 1);
+		// With SHIFT (lock_ratio), width and height must be equal
+		assert_eq!(rects[0].width, rects[0].height);
+	}
+
+	#[tokio::test]
+	async fn rectangle_draw_from_center() {
+		let mut editor = EditorTestUtils::create();
+		editor.new_document().await;
+		// ALT draws from center: drag from (50,50) to (70,60) → width=40, height=20, center=(50,50)
+		editor.drag_tool(ToolType::Rectangle, 50., 50., 70., 60., ModifierKeys::ALT).await;
+
+		let rects = get_rectangles(&mut editor).await;
+		assert_eq!(rects.len(), 1);
+		assert_eq!(rects[0].width, 40.);
+		assert_eq!(rects[0].height, 20.);
+		// Center is the drag start point (50, 50)
+		assert!(rects[0].transform.abs_diff_eq(DAffine2::from_translation(DVec2::new(50., 50.)), 1e-10));
+	}
+
+	#[tokio::test]
+	async fn rectangle_cancel() {
+		let mut editor = EditorTestUtils::create();
+		editor.new_document().await;
+		editor.drag_tool_cancel_rmb(ToolType::Rectangle).await;
+
+		let rects = get_rectangles(&mut editor).await;
+		assert_eq!(rects.len(), 0);
+	}
+}
