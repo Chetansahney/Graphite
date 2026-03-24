@@ -15,7 +15,7 @@ impl MessageData {
 		&self.name
 	}
 
-	pub fn fields(&self) -> &Vec<(String, usize)> {
+	pub fn fields(&self) -> &[(String, usize)] {
 		&self.fields
 	}
 
@@ -84,8 +84,8 @@ impl DebugMessageTree {
 		&self.name
 	}
 
-	pub fn fields(&self) -> Option<&Vec<String>> {
-		self.fields.as_ref()
+	pub fn fields(&self) -> Option<&[String]> {
+		self.fields.as_deref()
 	}
 
 	pub fn path(&self) -> &'static str {
@@ -119,9 +119,15 @@ mod tests {
 		let data = MessageData::new("MyMessage".to_string(), fields.clone(), "src/foo.rs", 42);
 
 		assert_eq!(data.name(), "MyMessage");
-		assert_eq!(data.fields(), &fields);
+		assert_eq!(data.fields(), fields.as_slice());
 		assert_eq!(data.path(), "src/foo.rs");
 		assert_eq!(data.line_number(), 42);
+	}
+
+	#[test]
+	fn message_data_empty_fields_returns_empty_slice() {
+		let data = MessageData::new("Empty".to_string(), vec![], "src/bar.rs", 0);
+		assert_eq!(data.fields(), &[] as &[(String, usize)]);
 	}
 
 	#[test]
@@ -143,7 +149,17 @@ mod tests {
 		tree.add_fields(vec!["alpha".to_string(), "beta".to_string()]);
 
 		let fields = tree.fields().expect("fields should be set");
-		assert_eq!(fields, &vec!["alpha".to_string(), "beta".to_string()]);
+		assert_eq!(fields, &["alpha", "beta"]);
+	}
+
+	#[test]
+	fn debug_message_tree_add_fields_overwrites_previous_fields() {
+		let mut tree = DebugMessageTree::new("Msg");
+		tree.add_fields(vec!["old".to_string()]);
+		tree.add_fields(vec!["new_a".to_string(), "new_b".to_string()]);
+
+		let fields = tree.fields().expect("fields should be set after overwrite");
+		assert_eq!(fields, &["new_a", "new_b"]);
 	}
 
 	#[test]
@@ -181,22 +197,44 @@ mod tests {
 	}
 
 	#[test]
-	fn debug_message_tree_add_message_handler() {
-		let mut tree = DebugMessageTree::new("Msg");
-		let handler_data = MessageData::new("Handler".to_string(), vec![], "path.rs", 5);
-		tree.add_message_handler_field(handler_data);
+	fn debug_message_tree_nested_variants() {
+		let mut root = DebugMessageTree::new("Root");
+		let mut child = DebugMessageTree::new("Child");
+		child.add_variant(DebugMessageTree::new("Grandchild"));
+		root.add_variant(child);
 
-		let handler = tree.message_handler_fields().expect("handler should be set");
-		assert_eq!(handler.name(), "Handler");
+		let root_variants = root.variants().expect("root variants should be set");
+		assert_eq!(root_variants.len(), 1);
+		assert_eq!(root_variants[0].name(), "Child");
+
+		let child_variants = root_variants[0].variants().expect("child variants should be set");
+		assert_eq!(child_variants.len(), 1);
+		assert_eq!(child_variants[0].name(), "Grandchild");
 	}
 
 	#[test]
-	fn debug_message_tree_add_message_handler_data() {
+	fn debug_message_tree_add_message_handler_exposes_full_data() {
 		let mut tree = DebugMessageTree::new("Msg");
-		let data = MessageData::new("HandlerData".to_string(), vec![], "data.rs", 10);
+		let handler = MessageData::new("Handler".to_string(), vec![("f".to_string(), 7)], "handler.rs", 5);
+		tree.add_message_handler_field(handler);
+
+		let h = tree.message_handler_fields().expect("handler should be set");
+		assert_eq!(h.name(), "Handler");
+		assert_eq!(h.path(), "handler.rs");
+		assert_eq!(h.line_number(), 5);
+		assert_eq!(h.fields(), &[("f".to_string(), 7)]);
+	}
+
+	#[test]
+	fn debug_message_tree_add_message_handler_data_exposes_full_data() {
+		let mut tree = DebugMessageTree::new("Msg");
+		let data = MessageData::new("HandlerData".to_string(), vec![("x".to_string(), 3)], "data.rs", 10);
 		tree.add_message_handler_data_field(data);
 
-		let handler_data = tree.message_handler_data_fields().expect("handler data should be set");
-		assert_eq!(handler_data.name(), "HandlerData");
+		let d = tree.message_handler_data_fields().expect("handler data should be set");
+		assert_eq!(d.name(), "HandlerData");
+		assert_eq!(d.path(), "data.rs");
+		assert_eq!(d.line_number(), 10);
+		assert_eq!(d.fields(), &[("x".to_string(), 3)]);
 	}
 }
