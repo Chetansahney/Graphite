@@ -383,6 +383,7 @@ pub enum ToolType {
 
 	// Raster tool group
 	Brush,
+	MarqueeRect,
 	Heal,
 	Clone,
 	Patch,
@@ -435,6 +436,7 @@ fn list_tools_in_groups() -> Vec<Vec<ToolRole>> {
 		vec![
 			// Raster tool group
 			ToolRole::Normal(Box::<brush_tool::BrushTool>::default()),
+			ToolRole::Normal(Box::<marquee_tool::MarqueeTool>::default()),
 			// ToolRole::Normal(
 			// 	ToolEntry::new(ToolType::Heal, "RasterHealTool")
 			// 		.tooltip_label("Heal Tool")
@@ -482,6 +484,7 @@ pub fn tool_message_to_tool_type(tool_message: &ToolMessage) -> ToolType {
 
 		// Raster tool group
 		ToolMessage::Brush(_) => ToolType::Brush,
+		ToolMessage::Marquee(_) => ToolType::MarqueeRect,
 		// ToolMessage::Heal(_) => ToolType::Heal,
 		// ToolMessage::Clone(_) => ToolType::Clone,
 		// ToolMessage::Patch(_) => ToolType::Patch,
@@ -514,6 +517,7 @@ pub fn tool_type_to_activate_tool_message(tool_type: ToolType) -> ToolMessageDis
 
 		// Raster tool group
 		ToolType::Brush => ToolMessageDiscriminant::ActivateToolBrush,
+		ToolType::MarqueeRect => ToolMessageDiscriminant::ActivateToolMarqueeRect,
 		// ToolType::Heal => ToolMessageDiscriminant::ActivateToolHeal,
 		// ToolType::Clone => ToolMessageDiscriminant::ActivateToolClone,
 		// ToolType::Patch => ToolMessageDiscriminant::ActivateToolPatch,

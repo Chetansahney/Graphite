@@ -37,6 +37,9 @@ pub enum ToolMessage {
 	Text(TextToolMessage),
 
 	#[child]
+	Marquee(MarqueeToolMessage),
+
+	#[child]
 	Brush(BrushToolMessage),
 	// 	// #[child]
 	// Heal(HealToolMessage),
@@ -70,6 +73,7 @@ pub enum ToolMessage {
 	ActivateToolText,
 	// Raster tools
 	ActivateToolBrush,
+	ActivateToolMarqueeRect,
 
 	ActivateTool {
 		tool_type: ToolType,

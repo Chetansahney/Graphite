@@ -9,7 +9,7 @@ use crate::messages::portfolio::document::utility_types::document_metadata::Laye
 use crate::messages::portfolio::document::utility_types::misc::{AlignAggregate, AlignAxis, FlipAxis, GridSnapping};
 use crate::messages::portfolio::utility_types::PanelType;
 use crate::messages::prelude::*;
-use glam::DAffine2;
+use glam::{DAffine2, DVec2};
 use graph_craft::document::NodeId;
 use graphene_std::Color;
 use graphene_std::raster::BlendMode;
@@ -54,14 +54,20 @@ pub enum DocumentMessage {
 	DocumentHistoryBackward,
 	DocumentHistoryForward,
 	DocumentStructureChanged,
+	ClearSelectionMask,
 	DrawArtboardOverlays {
 		context: OverlayContext,
 	},
+	DrawSelectionMaskOverlays {
+		context: OverlayContext,
+	},
 	DuplicateSelectedLayers,
+	EnterMaskMode,
 	EnterNestedNetwork {
 		node_id: NodeId,
 	},
 	Escape,
+	ExitMaskMode,
 	ExitNestedNetwork {
 		steps_back: usize,
 	},
@@ -167,6 +173,10 @@ pub enum DocumentMessage {
 	},
 	SetRangeSelectionLayer {
 		new_layer: Option<LayerNodeIdentifier>,
+	},
+	SetSelectionMask {
+		/// The selection rectangle in document space (min, max corners).
+		rect: [DVec2; 2],
 	},
 	SetSnapping {
 		#[serde(skip)]
