@@ -39,6 +39,7 @@ pub use crate::messages::tool::tool_messages::artboard_tool::{ArtboardToolMessag
 pub use crate::messages::tool::tool_messages::brush_tool::{BrushToolMessage, BrushToolMessageDiscriminant};
 pub use crate::messages::tool::tool_messages::eyedropper_tool::{EyedropperToolMessage, EyedropperToolMessageDiscriminant};
 pub use crate::messages::tool::tool_messages::fill_tool::{FillToolMessage, FillToolMessageDiscriminant};
+pub use crate::messages::tool::tool_messages::marquee_tool::{MarqueeToolMessage, MarqueeToolMessageDiscriminant};
 pub use crate::messages::tool::tool_messages::freehand_tool::{FreehandToolMessage, FreehandToolMessageDiscriminant};
 pub use crate::messages::tool::tool_messages::gradient_tool::{GradientOptionsUpdate, GradientToolMessage, GradientToolMessageDiscriminant};
 pub use crate::messages::tool::tool_messages::navigate_tool::{NavigateToolMessage, NavigateToolMessageDiscriminant};

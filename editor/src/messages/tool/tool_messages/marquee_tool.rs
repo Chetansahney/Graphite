@@ -81,7 +81,6 @@ impl LayoutHolder for MarqueeTool {
 	fn layout(&self) -> Layout {
 		let widgets = vec![
 			CheckboxInput::new(self.options.add_to_selection)
-				.tooltip("When enabled, the new selection is merged with the existing one instead of replacing it")
 				.on_update(|checkbox: &CheckboxInput| {
 					MarqueeToolMessage::UpdateOptions {
 						options: MarqueeOptionsUpdate::AddToSelection(checkbox.checked),
