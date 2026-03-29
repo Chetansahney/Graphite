@@ -52,7 +52,7 @@ impl ProcessManager {
 		self.restart_idle_timer().await;
 	}
 
-	#[allow(dead_code)]
+	#[allow(dead_code)] // TODO: expose manual shutdown when embedding provides lifecycle hooks
 	pub async fn shutdown(&self) {
 		if let Some(handle) = self.idle_task.lock().await.take() {
 			handle.abort();
