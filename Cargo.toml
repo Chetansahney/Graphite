@@ -22,6 +22,7 @@ members = [
 	"node-graph/node-macro",
 	"node-graph/preprocessor",
 	"proc-macros",
+	"crates/graphite-ml-ipc",
 	"tools/cargo-run",
 	"tools/crate-hierarchy-viz",
 	"tools/third-party-licenses",
@@ -144,7 +145,19 @@ web-sys = { version = "=0.3.77", features = [
 winit = { git = "https://github.com/rust-windowing/winit.git" }
 keyboard-types = "0.8"
 url = "2.5"
-tokio = { version = "1.29", features = ["fs", "macros", "io-std", "rt", "rt-multi-thread"] }
+tokio = { version = "1.29", features = [
+	"fs",
+	"macros",
+	"io-std",
+	"io-util",
+	"net",
+	"process",
+	"rt",
+	"rt-multi-thread",
+	"signal",
+	"sync",
+	"time",
+] }
 # Linebender ecosystem (BEGIN)
 kurbo = { version = "0.13", features = ["serde"] }
 vello = "0.7"
@@ -198,6 +211,8 @@ dirs = "6.0"
 cef = "142"
 cef-dll-sys = "142"
 include_dir = "0.7"
+rmp-serde = "1.3"
+uuid = { version = "1.10", features = ["serde", "v4"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tracing = "0.1"
 rfd = "0.15"

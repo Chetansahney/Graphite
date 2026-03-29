@@ -1,4 +1,6 @@
 pub mod any;
+#[cfg(feature = "ml-ipc")]
+pub mod ml;
 pub mod pixel_preview;
 pub mod render_cache;
 pub mod render_node;
