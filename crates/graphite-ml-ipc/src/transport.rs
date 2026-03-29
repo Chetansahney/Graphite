@@ -58,7 +58,10 @@ pub async fn connect(socket: &SocketConfig, timeout: Duration) -> Result<(Transp
 
 impl TransportWriter {
 	pub async fn send_frame(&mut self, payload: &[u8]) -> Result<()> {
-		let len = payload.len() as u32;
+		let len: u32 = payload.len().try_into().map_err(|_| Error::FrameTooLarge(u32::MAX))?;
+		if len > MAX_FRAME_BYTES {
+			return Err(Error::FrameTooLarge(len));
+		}
 		match self {
 			#[cfg(unix)]
 			Self::Unix(writer) => {

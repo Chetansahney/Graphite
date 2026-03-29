@@ -5,7 +5,7 @@ use serde_json::json;
 use std::sync::LazyLock;
 
 fn build_ipc_client() -> BlockingIpcClient {
-	BlockingIpcClient::new(IpcConfig::default()).expect("failed to initialize ML IPC client runtime")
+	BlockingIpcClient::new(IpcConfig::default()).unwrap_or_else(|err| panic!("failed to initialize ML IPC client runtime: {err}"))
 }
 
 static IPC_CLIENT: LazyLock<BlockingIpcClient> = LazyLock::new(build_ipc_client);
@@ -17,7 +17,7 @@ pub fn sam2_mask_inference(_: impl Ctx, mask: Raster<CPU>, prompt: String) -> Ra
 	let prompt_for_log = prompt.clone();
 	request
 		.parameters
-		.insert("mask_metadata".to_string(), json!({ "width": mask.width, "height": mask.height, "prompt": prompt }));
+		.insert("sam2_metadata".to_string(), json!({ "width": mask.width, "height": mask.height, "prompt": prompt }));
 
 	match IPC_CLIENT.send(request) {
 		Ok(response) => {
