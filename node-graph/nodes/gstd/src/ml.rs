@@ -4,7 +4,11 @@ use graphite_ml_ipc::{BlockingIpcClient, InferenceRequest, InferenceStatus, IpcC
 use serde_json::json;
 use std::sync::LazyLock;
 
-static IPC_CLIENT: LazyLock<BlockingIpcClient> = LazyLock::new(|| BlockingIpcClient::new(IpcConfig::default()).unwrap_or_else(|err| panic!("failed to initialize ML IPC client runtime: {err}")));
+fn build_ipc_client() -> BlockingIpcClient {
+	BlockingIpcClient::new(IpcConfig::default()).unwrap_or_else(|err| panic!("failed to initialize ML IPC client runtime: {err}"))
+}
+
+static IPC_CLIENT: LazyLock<BlockingIpcClient> = LazyLock::new(build_ipc_client);
 
 /// Experimental SAM2 placeholder that forwards a request to the ML IPC client.
 #[node_macro::node(category("ML: Experimental"))]

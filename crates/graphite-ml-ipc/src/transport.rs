@@ -3,7 +3,7 @@ use std::time::Duration;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 pub const FRAME_PREFIX_BYTES: usize = 4;
-// Cap individual frames to 16 MiB to bound allocations and protect against malformed peers.
+/// Cap individual frames to 16 MiB to bound allocations and protect against malformed peers while keeping parity with expected runner payload sizes.
 pub const MAX_FRAME_BYTES: u32 = 16 * 1024 * 1024;
 
 #[cfg(unix)]

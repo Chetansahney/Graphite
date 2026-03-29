@@ -52,20 +52,6 @@ impl ProcessManager {
 		self.restart_idle_timer().await;
 	}
 
-	#[allow(dead_code)] // TODO: expose manual shutdown when embedding provides lifecycle hooks
-	pub async fn shutdown(&self) {
-		if let Some(handle) = self.idle_task.lock().await.take() {
-			handle.abort();
-		}
-
-		let mut guard = self.child.lock().await;
-		if let Some(child) = guard.as_mut() {
-			let _ = child.kill().await;
-			let _ = child.wait().await;
-		}
-		*guard = None;
-	}
-
 	async fn spawn_child(&self) -> Result<Child> {
 		let mut command = Command::new(&self.runner.command);
 		command.args(&self.runner.args);
