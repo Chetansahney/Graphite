@@ -8,7 +8,6 @@ publish = false
 authors = ["Graphite Authors <contact@graphite.art>"]
 
 [dependencies]
-anyhow = { workspace = true }
 log = { workspace = true }
 rmp-serde = { workspace = true }
 serde = { workspace = true }

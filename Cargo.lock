@@ -2440,7 +2440,6 @@ dependencies = [
 name = "graphite-ml-ipc"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "log",
  "rmp-serde",
  "serde",
