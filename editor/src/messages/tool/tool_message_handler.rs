@@ -13,6 +13,10 @@ use graphene_std::raster::color::Color;
 
 const ARTBOARD_OVERLAY_PROVIDER: OverlayProvider = |context| DocumentMessage::DrawArtboardOverlays { context }.into();
 
+/// Persistent overlay provider that renders the marching-ants outline of the committed
+/// selection mask (stored in `DocumentMessageHandler::selection_mask`).
+const SELECTION_MASK_OVERLAY_PROVIDER: OverlayProvider = |context| DocumentMessage::DrawSelectionMaskOverlays { context }.into();
+
 #[derive(ExtractField)]
 pub struct ToolMessageContext<'a> {
 	pub document_id: DocumentId,
@@ -82,6 +86,7 @@ impl MessageHandler<ToolMessage, ToolMessageContext<'_>> for ToolMessageHandler 
 				responses.add(ShapeToolMessage::HideShapeTypeWidget { hide: false })
 			}
 			ToolMessage::ActivateToolBrush => responses.add_front(ToolMessage::ActivateTool { tool_type: ToolType::Brush }),
+			ToolMessage::ActivateToolMarqueeRect => responses.add_front(ToolMessage::ActivateTool { tool_type: ToolType::MarqueeRect }),
 			ToolMessage::ActivateToolShapeLine | ToolMessage::ActivateToolShapeRectangle | ToolMessage::ActivateToolShapeEllipse => {
 				let shape = match message {
 					ToolMessage::ActivateToolShapeLine => Line,
@@ -165,6 +170,8 @@ impl MessageHandler<ToolMessage, ToolMessageContext<'_>> for ToolMessageHandler 
 
 				// Re-add the artboard overlay provider when tools are reactivated
 				responses.add(OverlaysMessage::AddProvider { provider: ARTBOARD_OVERLAY_PROVIDER });
+				// Re-add the selection mask overlay provider so the marching-ants border persists across tool changes.
+				responses.add(OverlaysMessage::AddProvider { provider: SELECTION_MASK_OVERLAY_PROVIDER });
 
 				// Send the SelectionChanged message to the active tool, this will ensure the selection is updated
 				responses.add(EventMessage::SelectionChanged);
@@ -189,6 +196,7 @@ impl MessageHandler<ToolMessage, ToolMessageContext<'_>> for ToolMessageHandler 
 				});
 
 				responses.add(OverlaysMessage::RemoveProvider { provider: ARTBOARD_OVERLAY_PROVIDER });
+				responses.add(OverlaysMessage::RemoveProvider { provider: SELECTION_MASK_OVERLAY_PROVIDER });
 
 				HintData::clear_layout(responses);
 				responses.add(FrontendMessage::UpdateMouseCursor { cursor: Default::default() });
@@ -242,6 +250,7 @@ impl MessageHandler<ToolMessage, ToolMessageContext<'_>> for ToolMessageHandler 
 				tool_data.active_tool_mut().process_message(ToolMessage::UpdateCursor, responses, &mut data);
 
 				responses.add(OverlaysMessage::AddProvider { provider: ARTBOARD_OVERLAY_PROVIDER });
+				responses.add(OverlaysMessage::AddProvider { provider: SELECTION_MASK_OVERLAY_PROVIDER });
 			}
 			ToolMessage::PreUndo => {
 				let tool_data = &mut self.tool_state.tool_data;

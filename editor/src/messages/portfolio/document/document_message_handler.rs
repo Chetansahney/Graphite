@@ -140,6 +140,17 @@ pub struct DocumentMessageHandler {
 	/// Whether or not the editor has executed the network to render the document yet. If this is opened as an inactive tab, it won't be loaded initially because the active tab is prioritized.
 	#[serde(skip)]
 	pub is_loaded: bool,
+
+	/// The current pixel selection mask as a rectangle in document space (min, max corners), or `None` if there is no active selection.
+	/// When a selection mask is active, raster editing tools are constrained to paint only within this region.
+	#[serde(skip)]
+	pub selection_mask: Option<[glam::DVec2; 2]>,
+
+	/// When `true`, the editor is in Mask editing mode: drawing tools create or modify the selection mask
+	/// instead of adding content to the canvas. The marching-ants outline of the committed mask
+	/// is displayed while in normal mode.
+	#[serde(skip)]
+	pub mask_editing_mode: bool,
 }
 
 impl Default for DocumentMessageHandler {
@@ -179,6 +190,8 @@ impl Default for DocumentMessageHandler {
 			auto_saved_hash: None,
 			layer_range_selection_reference: None,
 			is_loaded: false,
+			selection_mask: None,
+			mask_editing_mode: false,
 		}
 	}
 }
@@ -312,6 +325,10 @@ impl MessageHandler<DocumentMessage, DocumentMessageContext<'_>> for DocumentMes
 			DocumentMessage::RemoveArtboards => {
 				responses.add(GraphOperationMessage::RemoveArtboards);
 			}
+			DocumentMessage::ClearSelectionMask => {
+				self.selection_mask = None;
+				self.mask_editing_mode = false;
+			}
 			DocumentMessage::ClearLayersPanel => {
 				// Send an empty layer list
 				if layers_panel_open {
@@ -423,6 +440,20 @@ impl MessageHandler<DocumentMessage, DocumentMessageContext<'_>> for DocumentMes
 					overlay_context.text(&name, COLOR_OVERLAY_GRAY, None, transform, 0., [Pivot::Start, Pivot::End]);
 				}
 			}
+			DocumentMessage::DrawSelectionMaskOverlays { mut context } => {
+				// Render marching-ants outline for the committed selection mask.
+				// The selection is stored in document space; transform to viewport space for display.
+				let Some(rect) = self.selection_mask else { return };
+				let doc_to_viewport = self.metadata().document_to_viewport;
+				let vp_min = doc_to_viewport.transform_point2(rect[0]);
+				let vp_max = doc_to_viewport.transform_point2(rect[1]);
+				let quad = graphene_std::math::quad::Quad::from_box([vp_min, vp_max]);
+
+				// Draw an outer white border (1 px wider) so the dashes are visible on both dark and light art.
+				context.dashed_quad(quad, Some(crate::consts::COLOR_OVERLAY_WHITE), None, Some(4.), Some(4.), Some(0.5));
+				// Draw the black dashes on top, offset by half a period to interleave with the white.
+				context.dashed_quad(quad, Some(crate::consts::COLOR_OVERLAY_BLACK), None, Some(4.), Some(4.), None);
+			}
 			DocumentMessage::DuplicateSelectedLayers => {
 				responses.add(DocumentMessage::AddTransaction);
 
@@ -464,6 +495,11 @@ impl MessageHandler<DocumentMessage, DocumentMessageContext<'_>> for DocumentMes
 				let nodes = new_dragging.iter().map(|layer| layer.to_node()).collect();
 				responses.add(NodeGraphMessage::SelectedNodesSet { nodes });
 				responses.add(NodeGraphMessage::RunDocumentGraph);
+			}
+			DocumentMessage::EnterMaskMode => {
+				self.mask_editing_mode = true;
+				// Switch to the MarqueeRect tool so the user can immediately draw a selection.
+				responses.add(ToolMessage::ActivateToolMarqueeRect);
 			}
 			DocumentMessage::EnterNestedNetwork { node_id } => {
 				self.breadcrumb_network_path.push(node_id);
@@ -515,6 +551,11 @@ impl MessageHandler<DocumentMessage, DocumentMessageContext<'_>> for DocumentMes
 				else {
 					responses.add(DocumentMessage::GraphViewOverlay { open: false });
 				}
+			}
+			DocumentMessage::ExitMaskMode => {
+				self.mask_editing_mode = false;
+				// Return to the Select tool after leaving mask editing mode.
+				responses.add(ToolMessage::ActivateToolSelect);
 			}
 			DocumentMessage::ExitNestedNetwork { steps_back } => {
 				for _ in 0..steps_back {
@@ -1070,6 +1111,9 @@ impl MessageHandler<DocumentMessage, DocumentMessageContext<'_>> for DocumentMes
 			}
 			DocumentMessage::SetRangeSelectionLayer { new_layer } => {
 				self.layer_range_selection_reference = new_layer;
+			}
+			DocumentMessage::SetSelectionMask { rect } => {
+				self.selection_mask = Some(rect);
 			}
 			DocumentMessage::SetSnapping { closure, snapping_state } => {
 				if let Some(closure) = closure {
