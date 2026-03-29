@@ -3,6 +3,7 @@ use std::time::Duration;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 pub const FRAME_PREFIX_BYTES: usize = 4;
+pub const MAX_FRAME_BYTES: u32 = 16 * 1024 * 1024;
 
 #[cfg(unix)]
 type ReadHalf = tokio::net::unix::OwnedReadHalf;
@@ -118,6 +119,10 @@ impl TransportReader {
 				}
 			}
 		}
-		Ok(Some(u32::from_be_bytes(len_buf)))
+		let length = u32::from_be_bytes(len_buf);
+		if length > MAX_FRAME_BYTES {
+			return Err(Error::FrameTooLarge(length));
+		}
+		Ok(Some(length))
 	}
 }

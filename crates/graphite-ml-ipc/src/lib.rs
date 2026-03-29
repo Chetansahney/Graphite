@@ -26,6 +26,8 @@ pub enum Error {
 	ReadyTimeout(Duration),
 	#[error("runner output closed before ready signal")]
 	RunnerNotReady,
+	#[error("received frame length {0} exceeds maximum allowed size")]
+	FrameTooLarge(u32),
 	#[error("connection is not available")]
 	Disconnected,
 	#[error("response channel closed")]

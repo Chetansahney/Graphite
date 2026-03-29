@@ -2254,7 +2254,6 @@ dependencies = [
  "log",
  "math-nodes",
  "node-macro",
- "once_cell",
  "path-bool-nodes",
  "raster-nodes",
  "rendering",

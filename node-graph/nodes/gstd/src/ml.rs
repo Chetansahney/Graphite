@@ -1,10 +1,10 @@
 use crate::raster_types::{CPU, Raster};
 use core_types::Ctx;
 use graphite_ml_ipc::{BlockingIpcClient, InferenceRequest, InferenceStatus, IpcConfig};
-use once_cell::sync::Lazy;
 use serde_json::json;
+use std::sync::LazyLock;
 
-static IPC_CLIENT: Lazy<BlockingIpcClient> = Lazy::new(|| BlockingIpcClient::new(IpcConfig::default()).expect("failed to initialize ML IPC client runtime"));
+static IPC_CLIENT: LazyLock<BlockingIpcClient> = LazyLock::new(|| BlockingIpcClient::new(IpcConfig::default()).unwrap_or_else(|err| panic!("failed to initialize ML IPC client runtime: {err}")));
 
 /// Experimental SAM2 placeholder that forwards a request to the ML IPC client.
 #[node_macro::node(category("ML: Experimental"))]

@@ -108,9 +108,9 @@ impl AsyncIpcClient {
 			*writer_guard = None;
 
 			let mut pending = pending.lock().await;
-			for (_, sender) in pending.drain() {
+			for (request_id, sender) in pending.drain() {
 				let _ = sender.send(InferenceResponse {
-					request_id: Uuid::nil(),
+					request_id,
 					status: InferenceStatus::Failed,
 					payload: None,
 					error: Some("connection closed".into()),
