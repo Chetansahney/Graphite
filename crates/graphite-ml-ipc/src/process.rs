@@ -80,7 +80,7 @@ impl ProcessManager {
 
 		match ready {
 			Ok(Ok(())) => {
-				// Keep draining stdout to avoid blocking the runner.
+				// Keep draining stdout after readiness so the runner can't stall on a full pipe while still emitting traces.
 				tokio::spawn(async move {
 					while let Ok(Some(line)) = lines.next_line().await {
 						log::trace!("runner: {line}");

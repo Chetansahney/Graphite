@@ -5,7 +5,7 @@ use serde_json::json;
 use std::sync::LazyLock;
 
 fn build_ipc_client() -> BlockingIpcClient {
-	BlockingIpcClient::new(IpcConfig::default()).unwrap_or_else(|err| panic!("failed to initialize ML IPC client runtime: {err}"))
+	BlockingIpcClient::new(IpcConfig::default()).expect("failed to initialize ML IPC client runtime")
 }
 
 static IPC_CLIENT: LazyLock<BlockingIpcClient> = LazyLock::new(build_ipc_client);
