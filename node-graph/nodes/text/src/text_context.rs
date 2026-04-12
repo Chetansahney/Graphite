@@ -81,7 +81,8 @@ impl TextContext {
 		let mut layout: Layout<()> = builder.build(text);
 
 		layout.break_all_lines(typesetting.max_width.map(|mw| mw as f32));
-		layout.align(typesetting.max_width.map(|max_w| max_w as f32), typesetting.align.into(), AlignmentOptions::default());
+		let alignment_width = typesetting.max_width.map(|max_w| max_w as f32).or_else(|| Some(layout.full_width()));
+		layout.align(alignment_width, typesetting.align.into(), AlignmentOptions::default());
 
 		Some(layout)
 	}
